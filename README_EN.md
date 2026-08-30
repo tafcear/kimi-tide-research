@@ -3,7 +3,7 @@
 > **Subject**: the open-source project [tafcear/kimi-tide](https://github.com/tafcear/kimi-tide) ("moon-tide") — a routing plugin for the DeepSeek Harness (DSH) ecosystem that lets **Kimi** and **DeepSeek** models divide work automatically, and the "dual-model development loop" methodology the project itself practices and documents. This study covers three threads: the plugin's routing and guardrail **architecture**, the **cost/loss structure** of the "cheap generator + strong reviewer" pattern, and the **feasibility boundary** of that pattern.
 >
 > **Authors**: [tafcear](https://github.com/tafcear) (author of kimi-tide) × Kimi (AI research collaboration)
-> Study date: 2026-08-21 ｜ Latest release: v0.4.0 (2026-08-20) ｜ v0.5.0 rule-driven routing design finalized, not yet implemented.
+> Study date: 2026-08-21 (first edition) / 2026-08-31 (v1.0.0 tracking update) ｜ Latest release: **v1.0.0 (2026-08-29)** ｜ Rule-driven routing (0.5.0) and collaboration flows (0.6.0) are now shipped.
 
 ## Abstract
 
@@ -56,6 +56,19 @@ The pattern is feasible under five conditions, and degrades past each boundary:
 The finalized v0.5.0 design replaces the six-dimension scoring engine with **presets = default model + N ordered rules** (conditions: has-image / named keyword groups; first match wins; miss → preset default). The scoring machinery (λ, thresholds, budget windows, slider UI) enters the deletion list. Motivations: the parameter space was too heavy for end users; a capability score table is a perishable asset (models drift monthly); and keyword-rule routing was already a "red ocean" in the DSH community — differentiation moved to the preset-management layer. The cost: the sliding-window premium budget — a rare engineering implementation of budget-constrained routing — has no successor in the rule world.
 
 Positioned against the academic landscape (FrugalGPT's up-to-98% cost reduction, Hybrid LLM's ~40% fewer expensive calls, RouteLLM's >2× cheaper at parity): kimi-tide is the **minimal non-learning member** of the routing family — heuristic classification + a human-auditable score table — distinguished by per-step granularity inside agent tool loops, stateful correctness guardrails (image latching), and decision observability as a first-class feature. Its clearest gap versus academic routers: no offline evaluation on a RouterBench-style benchmark.
+
+## 5.1 Tracking update: 0.5.0 → v1.0.0 (as of 2026-08-31)
+
+The pivot shipped the day after this study's first edition, and the project reached v1.0.0 within ten days:
+
+- **0.5.0 (08-21)**: rule-driven routing shipped; scoring engine fully deleted; configs auto-migrated with `.pre-v4` backup. 209/209 tests green.
+- **0.6.0 (08-23)**: **collaboration flows** — rule targets generalized to "model | flow". An image-transcription flow (a vision model reads the image into text, the text model carries on; LRU-cached, no retries on failure) root-fixes the latch deadlock via a per-image three-state table (native/transcribed/blind) and a preset-level `imageFallback` (latch/blind/transcribe-lazy). The **review loop became a built-in flow** — the Chapter-2 methodology productized. 337/337 green, 10/10 live-acceptance items passed.
+- **0.6.1 (08-23)**: review-driven fix wave — concurrent transcription, bounded polling, panel dedup, per-session decision isolation; push/PR CI added. 354/354 green.
+- **0.7.0 (08-26)**: keyword-matching accuracy — ASCII word boundaries (`decode` no longer hits `code`), specificity ranking by hit count, optional `minHits`. The substring-noise risk flagged in §5 above was fixed head-on. 359/359 green, acceptance A1–A10 all passed.
+- **0.8.0 (08-27)**: keyword groups 2→7, optional `effort` reasoning levels at three entry points, rule condition summaries, a "try a sentence" live tester, and decision reasons carrying hit counts. Acceptance B1–B8 all green.
+- **1.0.0 (08-29)**: brand theming ("moon-tide purple"), settings-nav crescent icon, and **multi-plan quota** — the dock quota slot follows the routed target (Kimi Code weekly/5h windows ↔ GLM Coding Plan credit windows; targets without a plan grey out). 497/497 green.
+
+Three observations. First, the rule-driven bet **held**: five iterations in ten days landed inside the preset+rules frame with zero rework, confirming the §5 analysis — while the budget-window capability indeed has no successor to date. Second, the collaboration loop **productized itself**: the review flow turned the manual `call_kimi` methodology into a selectable rule target, automating the hardest part of feasibility-condition five (process discipline). Third, the project has **outgrown "dual-model"**: the unrestricted candidate pool, GLM/qwen entering the routing pool in production, and multi-plan quota tracking make kimi-tide a de facto provider-agnostic collaboration orchestrator — "Kimi × DeepSeek" survives as its name and origin story.
 
 ## 6 Takeaways
 
